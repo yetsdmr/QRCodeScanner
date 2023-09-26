@@ -6,10 +6,20 @@
 //
 
 import SwiftUI
+import AVKit
 
 struct ScannerView: View {
     // QR Code Scanner Properties
     @State private var isScanning: Bool = false
+    @State private var session: AVCaptureSession = .init()
+    @State private var cameraPermission: Permission = .idle
+    // QR Scanner AV Output
+    @State private var qrOutput: AVCaptureMetadataOutput = .init()
+    // Error Properties
+    @State private var errorMessage: String = ""
+    @State private var showError: Bool = false
+    @Environment(\.openURL) private var openURL
+    
     var body: some View {
         VStack(spacing: 8) {
             Button {
@@ -37,6 +47,8 @@ struct ScannerView: View {
                 let size = $0.size
                 
                 ZStack {
+                    CameraView(frameSize: size, session: $session)
+                    
                     ForEach(0...4, id: \.self) { index in
                         let rotation = Double (index) * 90
                         
@@ -77,10 +89,29 @@ struct ScannerView: View {
 
         }
         .padding(15)
-        // For UI Demo
-        .onAppear {
-            activateScannerAnimation()
+        // Checking Camera Permission, when the View is Visible
+        .onAppear(perform: checkCameraPermission)
+        .alert(errorMessage, isPresented: $showError) {
+            // Showing Setting's Button, if permission is denied
+            if cameraPermission == .denied {
+                Button("Settings") {
+                    let settingsString = UIApplication.openSettingsURLString
+                    if let settingsURL = URL(string: settingsString) {
+                        // Opening App's Setting, Using openURL SwiftUI API
+                        openURL(settingsURL)
+                    }
+                }
+                
+                // Along with Cancel Button
+                Button("Cancel", role: .cancel) {
+                    
+                }
+            }
         }
+        // For UI Demo
+        //.onAppear {
+        //    activateScannerAnimation()
+        //}
     }
     
     // Activating Scanner Animation Method
@@ -89,6 +120,69 @@ struct ScannerView: View {
         withAnimation(.easeInOut(duration: 0.85).delay(0.1).repeatForever(autoreverses: true)) {
             isScanning = true
         }
+    }
+    
+    // Checking Camera Permission
+    func checkCameraPermission() {
+        Task {
+            switch AVCaptureDevice.authorizationStatus(for: .video) {
+            case .authorized:
+                cameraPermission = .approved
+                setupCamera()
+            case .notDetermined:
+                // Requesting Camera Access
+                if await AVCaptureDevice.requestAccess(for: .video) {
+                    // Permission Granted
+                    cameraPermission = .approved
+                    setupCamera()
+                } else {
+                    // Permission Denied
+                    cameraPermission = .denied
+                    // Presenting Error Message
+                    presentError("Please Provide Access to Camera for scanning codes")
+                }
+            case .denied, .restricted:
+                cameraPermission = .denied
+                presentError("Please Provide Access to Camera for scanning codes")
+            default: break
+            }
+        }
+    }
+    
+    // Setting Up Camera
+    func setupCamera() {
+        do {
+            // Finding Back Camera
+            guard let device = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInUltraWideCamera], mediaType: .video, position: .back).devices.first else {
+                presentError("UNKNOWN ERROR")
+                return
+            }
+            
+            // Camera Input
+            let input = try AVCaptureDeviceInput(device: device)
+            // For Extra Saftey
+            // Checking Whether input & output can be added to the session
+            guard session.canAddInput(input), session.canAddOutput(qrOutput) else {
+                presentError("UNKNOWN ERROR")
+                return
+            }
+            
+            // Adding Input & ouptut to Camera Session
+            session.beginConfiguration()
+            session.addInput(input)
+            session.addOutput(qrOutput)
+            // Setting Ouput config to read QR Codes
+            qrOutput.metadataObjectTypes = [.qr]
+            
+        } catch {
+            presentError(error.localizedDescription)
+        }
+    }
+    
+    // Presenting Error
+    func presentError(_ message: String) {
+        errorMessage = message
+        showError.toggle()
     }
 }
 
