@@ -19,7 +19,10 @@ struct ScannerView: View {
     @State private var errorMessage: String = ""
     @State private var showError: Bool = false
     @Environment(\.openURL) private var openURL
-    
+    // Camera QR Output Delegate
+    @StateObject private var qrDelegate = QRScannerDelegate()
+    // Scanned Code
+    @State private var scannedCode: String = ""
     var body: some View {
         VStack(spacing: 8) {
             Button {
@@ -47,7 +50,9 @@ struct ScannerView: View {
                 let size = $0.size
                 
                 ZStack {
-                    CameraView(frameSize: size, session: $session)
+                    CameraView(frameSize: CGSize(width: size.width, height: size.width), session: $session)
+                    // Making it little smaller
+                        .scaleEffect(0.97)
                     
                     ForEach(0...4, id: \.self) { index in
                         let rotation = Double (index) * 90
@@ -78,7 +83,10 @@ struct ScannerView: View {
             Spacer(minLength: 15)
             
             Button {
-                
+                if !session.isRunning && cameraPermission == .approved {
+                    reactivateCamera()
+                    activateScannerAnimation()
+                }
             } label: {
                 Image(systemName: "qrcode.viewfinder")
                     .font(.largeTitle)
@@ -108,10 +116,27 @@ struct ScannerView: View {
                 }
             }
         }
+        .onChange(of: qrDelegate.scannedCode) { newValue in
+            if let code = newValue {
+                scannedCode = code
+                // When the first code scan is available, immediately stop the camera.
+                session.stopRunning()
+                // Stopping Scanner Animation
+                deActivateScannerAnimation()
+                // Clearing the Data on Delegate
+                qrDelegate.scannedCode = nil
+            }
+        }
         // For UI Demo
         //.onAppear {
         //    activateScannerAnimation()
         //}
+    }
+    
+    func reactivateCamera() {
+        DispatchQueue.global(qos: .background).async {
+            session.startRunning()
+        }
     }
     
     // Activating Scanner Animation Method
@@ -122,13 +147,27 @@ struct ScannerView: View {
         }
     }
     
+    // De-Activating Scanner Animation Method
+    func deActivateScannerAnimation() {
+        // Adding Delay for Each Reversal
+        withAnimation(.easeInOut(duration: 0.85)) {
+            isScanning = false
+        }
+    }
+    
     // Checking Camera Permission
     func checkCameraPermission() {
         Task {
             switch AVCaptureDevice.authorizationStatus(for: .video) {
             case .authorized:
                 cameraPermission = .approved
-                setupCamera()
+                if session.inputs.isEmpty {
+                    // New Setup
+                    setupCamera()
+                } else {
+                    // Already Existing One
+                    session.startRunning()
+                }
             case .notDetermined:
                 // Requesting Camera Access
                 if await AVCaptureDevice.requestAccess(for: .video) {
@@ -153,8 +192,8 @@ struct ScannerView: View {
     func setupCamera() {
         do {
             // Finding Back Camera
-            guard let device = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInUltraWideCamera], mediaType: .video, position: .back).devices.first else {
-                presentError("UNKNOWN ERROR")
+            guard let device = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: .video, position: .back).devices.first else {
+                presentError("UNKNOWN DEVICE ERROR")
                 return
             }
             
@@ -163,7 +202,7 @@ struct ScannerView: View {
             // For Extra Saftey
             // Checking Whether input & output can be added to the session
             guard session.canAddInput(input), session.canAddOutput(qrOutput) else {
-                presentError("UNKNOWN ERROR")
+                presentError("UNKNOWN INPUT/OUTPUT ERROR")
                 return
             }
             
@@ -173,7 +212,14 @@ struct ScannerView: View {
             session.addOutput(qrOutput)
             // Setting Ouput config to read QR Codes
             qrOutput.metadataObjectTypes = [.qr]
-            
+            // Adding Delegate to Retreive the Fetched QR Code From Camera
+            qrOutput.setMetadataObjectsDelegate(qrDelegate, queue: .main)
+            session.commitConfiguration()
+            // Note Session must be started on Background thread
+            DispatchQueue.global(qos: .background).async {
+                session.startRunning()
+            }
+            activateScannerAnimation()
         } catch {
             presentError(error.localizedDescription)
         }

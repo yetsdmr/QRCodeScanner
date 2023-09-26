@@ -13,6 +13,7 @@
 		4A4EBBC12AB091860041CBFF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4A4EBBC02AB091860041CBFF /* Assets.xcassets */; };
 		4A4EBBC42AB091860041CBFF /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4A4EBBC32AB091860041CBFF /* Preview Assets.xcassets */; };
 		4AA8314C2AC2DE66006513D8 /* Permission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AA8314B2AC2DE66006513D8 /* Permission.swift */; };
+		4AA8314E2AC2E346006513D8 /* QRScannerDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AA8314D2AC2E346006513D8 /* QRScannerDelegate.swift */; };
 		4AC572712AB87DD5007F1366 /* ScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AC572702AB87DD5007F1366 /* ScannerView.swift */; };
 /* End PBXBuildFile section */
 
@@ -24,6 +25,7 @@
 		4A4EBBC02AB091860041CBFF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		4A4EBBC32AB091860041CBFF /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		4AA8314B2AC2DE66006513D8 /* Permission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Permission.swift; sourceTree = "<group>"; };
+		4AA8314D2AC2E346006513D8 /* QRScannerDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerDelegate.swift; sourceTree = "<group>"; };
 		4AC572702AB87DD5007F1366 /* ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -79,6 +81,7 @@
 			isa = PBXGroup;
 			children = (
 				4AA8314B2AC2DE66006513D8 /* Permission.swift */,
+				4AA8314D2AC2E346006513D8 /* QRScannerDelegate.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -166,6 +169,7 @@
 				4A4EBBBF2AB091850041CBFF /* ContentView.swift in Sources */,
 				4A4EBBBD2AB091850041CBFF /* QRCodeScannerApp.swift in Sources */,
 				4A189CF82AB88EFC008EE822 /* CameraView.swift in Sources */,
+				4AA8314E2AC2E346006513D8 /* QRScannerDelegate.swift in Sources */,
 				4AA8314C2AC2DE66006513D8 /* Permission.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
